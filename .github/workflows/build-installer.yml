@@ -1,0 +1,63 @@
+name: Build BuniSetup Installer
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout buni-installer-test
+        uses: actions/checkout@v4
+
+      - name: Checkout buni (source)
+        uses: actions/checkout@v4
+        with:
+          repository: EloyYang/buni
+          path: buni-src
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          pip install -r buni-src/windows/requirements.txt
+          pip install pyinstaller
+
+      - name: Build Buni.exe (PyInstaller)
+        run: |
+          pyinstaller `
+            --onefile `
+            --windowed `
+            --name Buni `
+            --hidden-import pystray `
+            --hidden-import PIL `
+            --hidden-import PIL.Image `
+            --hidden-import PIL.ImageDraw `
+            buni-src/windows/buni.py
+
+      - name: Copy files for Inno Setup
+        run: |
+          mkdir -p installer-input
+          copy dist\Buni.exe installer-input\Buni.exe
+          copy buni-src\windows\install_hooks.py installer-input\install_hooks.py
+          copy buni-src\windows\requirements.txt installer-input\requirements.txt
+
+      - name: Build BuniSetup.exe (Inno Setup)
+        run: |
+          $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+          & $iscc BuniSetup.iss
+        shell: powershell
+
+      - name: Upload BuniSetup.exe to Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/BuniSetup.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

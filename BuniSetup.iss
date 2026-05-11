@@ -33,10 +33,10 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 
 [Files]
 ; Buni 메인 실행 파일 (PyInstaller 빌드 결과물)
-Source: "..\buni\windows\dist\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
+Source: "installer-input\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
 ; 훅 설치 스크립트 및 관련 파일
-Source: "..\buni\windows\install_hooks.py"; DestDir: "{app}"; Flags: ignoreversion
-Source: "..\buni\windows\requirements.txt"; DestDir: "{app}"; Flags: ignoreversion
+Source: "installer-input\install_hooks.py"; DestDir: "{app}"; Flags: ignoreversion
+Source: "installer-input\requirements.txt"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
