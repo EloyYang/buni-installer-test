@@ -1,5 +1,5 @@
 #define MyAppName "Buni"
-#define MyAppVersion "1.3.7"
+#define MyAppVersion "1.3.8"
 #define MyAppPublisher "EloyYang"
 #define MyAppURL "https://github.com/EloyYang/buni"
 #define MyAppExeName "Buni.exe"
