@@ -44,10 +44,11 @@ jobs:
 
       - name: Copy files for Inno Setup
         run: |
-          mkdir -p installer-input
-          copy dist\Buni.exe installer-input\Buni.exe
-          copy buni-src\windows\install_hooks.py installer-input\install_hooks.py
-          copy buni-src\windows\requirements.txt installer-input\requirements.txt
+          New-Item -ItemType Directory -Force -Path installer-input | Out-Null
+          Copy-Item dist\Buni.exe installer-input\Buni.exe -Force
+          Copy-Item buni-src\windows\install_hooks.py installer-input\install_hooks.py -Force
+          Copy-Item buni-src\windows\requirements.txt installer-input\requirements.txt -Force
+        shell: powershell
 
       - name: Build BuniSetup.exe (Inno Setup)
         run: |
