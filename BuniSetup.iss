@@ -43,16 +43,23 @@ Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
 Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
 
 [Run]
-; 설치 후 Claude Code 훅 자동 등록
+; Python이 없으면 winget으로 자동 설치
+Filename: "powershell.exe"; \
+  Parameters: "-ExecutionPolicy Bypass -Command ""if (-not (Get-Command python -ErrorAction SilentlyContinue)) {{ winget install -e --id Python.Python.3 --silent --accept-package-agreements --accept-source-agreements }}"""; \
+  StatusMsg: "Python 설치 중..."; Flags: runhidden waituntilterminated
+; pip 패키지 설치
+Filename: "python.exe"; Parameters: "-m pip install -r ""{app}\requirements.txt"" --quiet"; \
+  StatusMsg: "패키지 설치 중..."; Flags: runhidden waituntilterminated
+; Claude Code 훅 자동 등록
 Filename: "python.exe"; Parameters: """{app}\install_hooks.py"""; \
-  Description: "Claude Code 훅 설치"; Flags: runhidden waituntilterminated
+  StatusMsg: "Claude Code 훅 설치 중..."; Flags: runhidden waituntilterminated
 ; 설치 완료 후 Buni 자동 실행
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; \
   Flags: nowait postinstall skipifsilent
 
 [UninstallRun]
-Filename: "python.exe"; Parameters: "-c ""import shutil, pathlib; [p.unlink(missing_ok=True) for p in (pathlib.Path.home()/'.claude').glob('companion-*.py')]"""; \
-  Flags: runhidden waituntilterminated
+Filename: "python.exe"; Parameters: "-c ""import pathlib; [p.unlink(missing_ok=True) for p in (pathlib.Path.home()/'.claude').glob('companion-*.py')]"""; \
+  RunOnceId: "RemoveHooks"; Flags: runhidden waituntilterminated
 
 [Code]
 function IsPythonInstalled(): Boolean;
@@ -62,12 +69,20 @@ begin
   Result := Exec('python.exe', '--version', '', SW_HIDE, ewWaitUntilTerminated, ResultCode) and (ResultCode = 0);
 end;
 
-function InitializeSetup(): Boolean;
+function PrepareToInstall(var NeedsRestart: Boolean): String;
+var
+  ResultCode: Integer;
 begin
-  Result := True;
+  Result := '';
   if not IsPythonInstalled() then begin
-    MsgBox('Python이 설치되어 있지 않습니다.' + #13#10 +
-           'https://www.python.org 에서 Python 3.10 이상을 설치 후 다시 실행해주세요.', mbError, MB_OK);
-    Result := False;
+    // winget 없는 환경 대비: python.org에서 직접 다운로드
+    if not Exec('winget.exe', '--version', '', SW_HIDE, ewWaitUntilTerminated, ResultCode) then begin
+      if MsgBox('Python이 설치되어 있지 않습니다.' + #13#10 +
+                '지금 python.org를 열어 설치하시겠습니까?', mbConfirmation, MB_YESNO) = IDYES then begin
+        ShellExec('open', 'https://www.python.org/downloads/', '', '', SW_SHOW, ewNoWait, ResultCode);
+        Result := 'Python을 설치한 후 다시 실행해주세요.';
+      end else
+        Result := 'Python 설치가 필요합니다.';
+    end;
   end;
 end;
